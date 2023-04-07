@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config()
 const { MongoClient, ServerApiVersion } = require('mongodb');
+const  ObjectId = require('mongodb').ObjectId;
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -77,10 +78,19 @@ async function run() {
                 const expectedMess = await messCollection.findOne(query);
                 res.send(expectedMess);
             }else{
-                res.send({message: 'Sorry! You have no mess. you can not access dashboard'})
+                res.send({message: 'Sorry! You have no mess. For access dashboard either you must have a mess or you have stay as mess member'})
             }
 
         })
+
+        //get mess information by id
+        app.get('/messById/:id', async(req, res) => {
+            const id = req.params.id;
+            const query = {_id:new ObjectId(id)};
+            const expectedMess = await messCollection.findOne(query);
+            res.send(expectedMess);
+        })
+
 
         //post or update new mess member information to database
         app.put('/addMessMember/:email', async(req, res) => {
@@ -136,6 +146,14 @@ async function run() {
             const email = req.params.email;
             const query = {email: email};
             const result = await requestedMemberCollectionn.deleteOne(query);
+            res.send(result);
+        })
+
+        //delete indevisual mess member from database....
+        app.delete('/messMember/:email', async(req, res) => {
+            const email = req.params.email;
+            const query = {emailAddress: email};
+            const result = await messMemberCollection.deleteOne(query);
             res.send(result);
         })
 
