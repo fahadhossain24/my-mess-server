@@ -2,12 +2,21 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config()
 const { MongoClient, ServerApiVersion } = require('mongodb');
+const { default: Stripe } = require('stripe');
 const ObjectId = require('mongodb').ObjectId;
 const app = express();
 const port = process.env.PORT || 5000;
+const stripe = require("stripe");
+stripe.api_key = process.env.PAYMENT_SECRET_KEY;
+const Sib = require('sib-api-v3-sdk');
+
+const clientSib = Sib.ApiClient.instance
+const apiKey = clientSib.authentications['api-key']
+apiKey.apiKey = process.env.SENDINBLUE_SMTP_API_KEY
 
 // middleware.....
 app.use(cors());
+// app.use(express.static("public"));
 app.use(express.json());
 
 /**
@@ -25,6 +34,21 @@ async function run() {
         const messCollection = client.db('myMess1').collection('mess');
         const messMemberCollection = client.db('myMess1').collection('messMember');
         const requestedMemberCollectionn = client.db('myMess1').collection('requestedMember')
+
+        // create intent and client secret for payment
+        app.post("/createPaymentIntent", async (req, res) => {
+            const price = req.body;
+            const amount = price * 100
+            // Create a PaymentIntent with the order amount and currency
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: amount,
+                currency: "usd",
+                payment_method_types: ['card'],
+            });
+            res.send({
+                clientSecret: paymentIntent.client_secret,
+            });
+        });
 
         // post or update user information from client to database
         app.put('/user/:email', async (req, res) => {
@@ -89,18 +113,18 @@ async function run() {
             const query = {};
             const cursor = messCollection.find(query);
             const allMess = await cursor.toArray();
-            const filteredId = allMess.find(mess => { 
+            const filteredId = allMess.find(mess => {
                 const messId = mess._id.toString();
                 const matchedMess = messId === id;
                 return matchedMess;
             });
             // console.log(filteredId)
             if (filteredId) {
-                const query = {_id: new ObjectId(id)};
+                const query = { _id: new ObjectId(id) };
                 const expectedMess = await messCollection.findOne(query);
                 res.send(expectedMess);
-            }else{
-                res.send({message: 'Worng mess id!!!'});
+            } else {
+                res.send({ message: 'Worng mess id!!!' });
             }
 
         })
@@ -121,6 +145,66 @@ async function run() {
                     $set: memberInfo,
                 };
                 const result = await messMemberCollection.updateOne(filter, updateDoc, options);
+                if (result.upsertedCount > 0) {
+                    const tranEmailApi = new Sib.TransactionalEmailsApi()
+                    const sender = {
+                        email: 'fahadhossaim24@gmail.com',
+                        name: 'Fahad Hossain',
+                    }
+                    const receivers = [
+                        {
+                            email: memberEmail,
+                        },
+                    ]
+                    tranEmailApi
+                        .sendTransacEmail({
+                            sender,
+                            to: receivers,
+                            subject: 'Member activation success',
+                            htmlContent: `
+                            <h1><span style='color: cyan'>${memberInfo?.name}</span> Congratulations! You are successfully added</h1>
+                            <h2>Your mess id: ${memberInfo?.messId}</h2>
+                            <h3>You room catagory: ${memberInfo?.roomCatagory}</h3>
+                            <p>As soon as possible your membership will be updated. Please wait for that and after you got a membership updated email then you will be login your profile.</p>
+                            <br/>
+                            <h2>Thank you</h2>
+                            `,
+                            params: {
+                                role: 'Frontend',
+                            },
+                        })
+                } else {
+                    const tranEmailApi = new Sib.TransactionalEmailsApi()
+                    const sender = {
+                        email: 'fahadhossaim24@gmail.com',
+                        name: 'Fahad Hossain',
+                    }
+                    const receivers = [
+                        {
+                            email: memberEmail,
+                        },
+                    ]
+                    tranEmailApi
+                        .sendTransacEmail({
+                            sender,
+                            to: receivers,
+                            subject: 'Member Updating success',
+                            htmlContent: `
+                                <h1>Wow! <span style='color: cyan'>${memberInfo?.name}</span> you have gotten full membership</h1>
+                                <h2>You are a ${memberInfo?.memberRole} of the mess</h2>
+                                <h3>House Rant: ${memberInfo?.houseRant}</h3>
+                                <h3>Others cost: ${memberInfo?.othersCost}</h3>
+                                <h3>Developmentn Charge: ${memberInfo?.developmentCharge}</h3>
+                                <h2>Now you are a actual member of this mess.</h2>
+                                <h3>Enjoy your journy</h3>
+                                <p>Best wishes from owner</p>
+                                <h2>Thank you</h2>
+                                `,
+                            params: {
+                                role: 'Frontend',
+                            },
+                        })
+                }
                 res.send(result);
             } else {
                 res.send({ message: `Opps! ${memberInfo.emailAddress} can't find. This member haven\'t an account on this website` });
@@ -178,6 +262,7 @@ async function run() {
             const result = await messMemberCollection.deleteOne(query);
             res.send(result);
         })
+
 
     } finally {
 
