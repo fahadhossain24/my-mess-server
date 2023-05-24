@@ -22,7 +22,7 @@ app.use(express.json());
 /**
  * working with mongodb database
 */
-const uri = "mongodb+srv://my-mess1:40mgA58KnPNrBn3Y@cluster0.gvie0th.mongodb.net/?retryWrites=true&w=majority";
+const uri = `mongodb+srv://${process.env.DB_USER_NAME}:${process.env.DB_USER_PASSWORD}@cluster0.gvie0th.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
 async function run() {
