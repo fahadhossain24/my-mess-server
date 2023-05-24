@@ -22,7 +22,7 @@ app.use(express.json());
 /**
  * working with mongodb database
 */
-const uri = `mongodb+srv://${process.env.DB_USER_NAME}:${process.env.DB_USER_PASSWORD}@cluster0.gvie0th.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`;
+const uri = `mongodb+srv://vercel-admin-user-646da3c97df3dc61c0224d0f:aSr5ZCeW06vuegC2@cluster0.gvie0th.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
 async function run() {
@@ -34,6 +34,10 @@ async function run() {
         const messCollection = client.db('myMess1').collection('mess');
         const messMemberCollection = client.db('myMess1').collection('messMember');
         const requestedMemberCollectionn = client.db('myMess1').collection('requestedMember')
+
+        app.get('/sex', (req, res) => {
+            res.send('successfull')
+        })
 
         // create intent and client secret for payment
         app.post("/createPaymentIntent", async (req, res) => {
