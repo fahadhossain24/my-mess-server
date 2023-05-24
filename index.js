@@ -22,7 +22,7 @@ app.use(express.json());
 /**
  * working with mongodb database
 */
-const uri = `mongodb+srv://vercel-admin-user-646da3c97df3dc61c0224d0f:aSr5ZCeW06vuegC2@cluster0.gvie0th.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`;
+const uri = `mongodb+srv://${process.env.DB_USER_NAME}:${process.env.DB_USER_PASSWORD}@cluster0.gvie0th.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
 
