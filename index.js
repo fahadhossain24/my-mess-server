@@ -14,6 +14,7 @@ const clientSib = Sib.ApiClient.instance
 const apiKey = clientSib.authentications['api-key']
 apiKey.apiKey = process.env.SENDINBLUE_SMTP_API_KEY
 
+
 // middleware.....
 app.use(cors());
 // app.use(express.static("public"));
@@ -66,6 +67,14 @@ async function run() {
                 $set: userInfo
             }
             const result = await userCollection.updateOne(filter, updateDoc, option);
+            res.send(result);
+        })
+
+        app.post('/messLocation', async(req, res) => {
+            const messLocation = req.body;
+            const query = {address: messLocation.locationName}
+            const cursor = messCollection.find(query);
+            const result = await cursor.toArray();
             res.send(result);
         })
 
@@ -133,6 +142,13 @@ async function run() {
                 res.send({ message: 'Worng mess id!!!' });
             }
 
+        })
+
+        app.get('/messWithId/:id', async(req, res) => {
+            const id = req.params.id;
+            const query = {_id: new ObjectId(id)};
+            const result = await messCollection.findOne(query);
+            res.send(result);
         })
 
 
@@ -218,17 +234,18 @@ async function run() {
         })
 
         //get all current mess member from messMember collection..........
-        app.get('/messMember', async (req, res) => {
-            const query = {};
+        app.get('/messMember/:messId', async (req, res) => {
+            const messId = req.params.messId;
+            const query = {messId: messId};
             const cursor = messMemberCollection.find(query);
             const result = await cursor.toArray();
             res.send(result);
         })
 
         //get specific current mess member by email from messMember collection..........
-        app.get('/messMember/:email', async (req, res) => {
+        app.get('/messMemberbyEmail/:email', async (req, res) => {
             const email = req.params.email;
-            const query = { emailAddress: email };
+            const query = {emailAddress: email};
             const getSpecificMember = await messMemberCollection.findOne(query);
             res.send(getSpecificMember);
         })
@@ -247,12 +264,22 @@ async function run() {
         })
 
         //get all requested member .....
-        app.get('/requestedMember', async (req, res) => {
-            const query = {};
+        app.get('/requestedMember/:messId', async (req, res) => {
+            const messId = req.params.messId;
+            const query = {messId: messId};
             const cursor = requestedMemberCollectionn.find(query);
             const result = await cursor.toArray();
             res.send(result);
         })
+
+        // get all mess information
+        app.get('/allMessInfo/:currentUserEmail', async(req, res) => {
+            const email = req.params.currentUserEmail;
+            const query = {ownerEmail: email}
+            const result = await messCollection.findOne(query);
+            res.send(result);
+        })
+
         // delete indevisual requested member from database....
         app.delete('/requestedMember/:email', async (req, res) => {
             const email = req.params.email;
