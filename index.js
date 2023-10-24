@@ -117,7 +117,7 @@ async function run() {
                 const expectedMess = await messCollection.findOne(query);
                 res.send(expectedMess);
             } else {
-                res.send({ message: 'Sorry! You have no mess. For access dashboard either you must have a mess or you have stay as mess member' })
+                res.send({ message: 'Sorry! You have no mess. For access dashboard either you must have a mess or you must have membership to a mess' })
             }
 
         })
@@ -235,6 +235,7 @@ async function run() {
 
         //get all current mess member from messMember collection..........
         app.get('/messMember/:messId', async (req, res) => {
+            console.log(req.params.messId)
             const messId = req.params.messId;
             const query = {messId: messId};
             const cursor = messMemberCollection.find(query);
@@ -247,7 +248,14 @@ async function run() {
             const email = req.params.email;
             const query = {emailAddress: email};
             const getSpecificMember = await messMemberCollection.findOne(query);
-            res.send(getSpecificMember);
+            if(!getSpecificMember){
+                res.send({
+                    status: 'failed',
+                    message: 'Could not find member'
+                })
+            }else{
+                res.send(getSpecificMember);
+            }
         })
 
         // post or update member request
